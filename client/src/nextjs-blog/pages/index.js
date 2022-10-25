@@ -4,23 +4,69 @@ import Link from 'next/Link'
 import { useEffect, useState } from 'react'
 import ContentEditable from "react-contenteditable";
 
+
+// I need to replicate this hash table over other nodes.
+// The get/set API's won't change. All I need is to say now replicate
+// Or keep the replication transparent, how ?
+// This client will become a temporary node in a cluster replicate and leave
+// Very similar to git commit and git push except that the push is implicit
+
+class ReplicatedHashTable {
+  constructor() {
+    this.table = new Array(127);
+    this.size = 0
+  }
+
+  _hash(key) {
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash += key.charCodeAt(i);
+    }
+    console.log(hash);
+    return hash % this.table.length;
+  }
+
+  set(key, value) {
+    const index = this._hash(key);
+    console.log("The set index is ", index);
+    this.table[index] = [key, value];
+    this.size++;
+  }
+
+  get(key) {
+    const index = this._hash(key); 
+    console.log("The get index is ", index);
+    return this.table[index][1];
+  }
+
+  remove(key) {
+    const index = this._hash(key);
+    if (this.table[index] && this.table[index].length) {
+      this.table[index] = [];
+      this.size--;
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
 export default function Home() {
   const [localData, setLocalData] = useState("");
   const [localRawData, setLocalRawData] = useState("");
   const contentEditable = React.createRef();
-
-  useEffect(() => {
-      localStorage.setItem('localData', JSON.stringify(localData));
-  })
-
+  // Temporary hack for testing a feature
+  const localMap = new ReplicatedHashTable();
+  
   const handleTextChange = (event) => {
-    console.log("In change event");
-    setLocalRawData(event.target.value);
+    //setLocalData(event.target.value)
+    //console.log('Local data', localData);
+    localMap.set("key", event.target.value);
+    console.log("Retrieval from map", localMap.get("key"));
   }
 
   function transform(data) {
     const test = `${data}`;
-    console.log(test);
     return test;
   }
 
