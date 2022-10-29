@@ -3,6 +3,7 @@ import React from 'react'
 import Link from 'next/Link'
 import { useEffect, useState } from 'react'
 import ContentEditable from "react-contenteditable";
+import { Socket } from 'net';
 
 
 // I need to replicate this hash table over other nodes.
@@ -12,11 +13,27 @@ import ContentEditable from "react-contenteditable";
 // Very similar to git commit and git push except that the push is implicit
 
 class ReplicatedHashTable {
+  
   constructor() {
     this.table = new Array(127);
     this.size = 0
+    this.serverMap = new Map();
+    this.serverMap[75] = "ws://localhost:8000";
+    this.serverMap.set(75, "ws://localhost:8000");
   }
 
+  getPartitionId(parentServer) {
+
+  }
+
+  /**
+   * The hash this value returns can be an index into a server_id. 
+   * We can look up that server id in another map to find out 
+   * the actual server IP/domain and push the data packet to that machine. 
+   * 
+   * @param {key to insert} key 
+   * @returns the hash index of the array or the server id.
+   */
   _hash(key) {
     let hash = 0;
     for (let i = 0; i < key.length; i++) {
@@ -29,8 +46,22 @@ class ReplicatedHashTable {
   set(key, value) {
     const index = this._hash(key);
     console.log("The set index is ", index);
+    const server_url = this.serverMap.get(index);
+    let socket = new WebSocket(server_url);
+    console.log("Server URL: ", server_url);
     this.table[index] = [key, value];
     this.size++;
+
+    // replicate to another server 
+    socket.onopen = function () {
+      socket.send(JSON.stringify({
+        key: key,
+        value: value,
+        partition_id: 1}));
+    }
+    socket.onmessage = function (s) {
+      console.log("Got reply ", s);
+    }
   }
 
   get(key) {
@@ -61,6 +92,7 @@ export default function Home() {
   const handleTextChange = (event) => {
     //setLocalData(event.target.value)
     //console.log('Local data', localData);
+    
     localMap.set("key", event.target.value);
     console.log("Retrieval from map", localMap.get("key"));
   }
