@@ -1,9 +1,8 @@
 import Head from 'next/head'
 import React from 'react'
-import Link from 'next/Link'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import ContentEditable from "react-contenteditable";
-import { Socket } from 'net';
 
 
 // I need to replicate this hash table over other nodes.
@@ -17,13 +16,9 @@ class ReplicatedHashTable {
   constructor() {
     this.table = new Array(127);
     this.size = 0
-    this.serverMap = new Map();
-    this.serverMap[75] = "ws://localhost:8000";
-    this.serverMap.set(75, "ws://localhost:8000");
-  }
 
-  getPartitionId(parentServer) {
-
+    // Hard coding the server URL for now
+    this.serverUrl =  "ws://localhost:8000";
   }
 
   /**
@@ -46,9 +41,7 @@ class ReplicatedHashTable {
   set(key, value) {
     const index = this._hash(key);
     console.log("The set index is ", index);
-    const server_url = this.serverMap.get(index);
-    let socket = new WebSocket(server_url);
-    console.log("Server URL: ", server_url);
+    let socket = new WebSocket(this.serverUrl);
     this.table[index] = [key, value];
     this.size++;
 
